@@ -5910,15 +5910,15 @@ uint16_t mode_2Dfloatingblobs(void) {
 static const char _data_FX_MODE_2DBLOBS[] PROGMEM = "Blobs@!,# blobs,Blur,Trail;!;!;2;c1=8";
 
 void draw_l90_cb(u8g2_uint_t x, u8g2_uint_t y, u8g2_uint_t len, uint8_t dir) {
-  // if (dir == 0) {
+  if (dir == 0) {
     for (u8g2_uint_t i = 0; i < len; i++) {
       SEGMENT.setPixelColorXY(x+i, y, SEGMENT.color_from_palette(0, false, false, 0));
     }
-  // } else {
-  //   for (u8g2_uint_t i = 0; i < len; i++) {
-  //     SEGMENT.setPixelColorXY(x, y + i, SEGMENT.color_from_palette(0, false, false, 0));
-  //   }
-  // }
+  } else {
+    for (u8g2_uint_t i = 0; i < len; i++) {
+      SEGMENT.setPixelColorXY(x, y + i, SEGMENT.color_from_palette(0, false, false, 0));
+    }
+  }
 }
 
 ////////////////////////////
@@ -5926,32 +5926,16 @@ void draw_l90_cb(u8g2_uint_t x, u8g2_uint_t y, u8g2_uint_t len, uint8_t dir) {
 ////////////////////////////
 uint16_t mode_2Dscrollingtext(void) {
   if (!strip.isMatrix) return mode_static(); // not a 2D set-up
-  SEGMENT.fill(0x00);
+  // SEGMENT.fill(0x00);
+  if (!SEGMENT.check2) SEGMENT.fade_out(255 - (SEGMENT.custom1>>4));  // trail
+
   // SEGMENT.setPixelColorXY(0, 0, SEGMENT.color_from_palette(0, false, false, 0));
 
-  // const uint16_t cols = SEGMENT.virtualWidth();
-  // const uint16_t rows = SEGMENT.virtualHeight();
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
 
   // int letterWidth, rotLW;
   // int letterHeight, rotLH;
-
-  // switch (map(SEGMENT.custom2, 0, 255, 1, 5)) {
-  //   default:
-  //   case 1: letterWidth = 4; letterHeight =  6; break;
-  //   case 2: letterWidth = 5; letterHeight =  8; break;
-  //   case 3: letterWidth = 6; letterHeight =  8; break;
-  //   case 4: letterWidth = 7; letterHeight =  9; break;
-  //   case 5: letterWidth = 5; letterHeight = 12; break;
-  // }
-
-  // // letters are rotated
-  // if (((SEGMENT.custom3+1)>>3) % 2) {
-  //   rotLH = letterWidth;
-  //   rotLW = letterHeight;
-  // } else {
-  //   rotLW = letterWidth;
-  //   rotLH = letterHeight;
-  // }
 
   char text[WLED_MAX_SEGNAME_LEN+1] = {'\0'};
   
@@ -5959,89 +5943,78 @@ uint16_t mode_2Dscrollingtext(void) {
     for (size_t i=0,j=0; i<strlen(SEGMENT.name); i++)
       text[j++] = SEGMENT.name[i];
   
-  // const bool zero = strchr(text, '0') != nullptr;
+  const bool zero = strchr(text, '0') != nullptr;
 
-  // char sec[5];
-  // int  AmPmHour = hour(localTime);
-  // bool isitAM = true;
-  // if (useAMPM) {
-  //   if (AmPmHour > 11) { AmPmHour -= 12; isitAM = false; }
-  //   if (AmPmHour == 0) { AmPmHour  = 12; }
-  //   sprintf_P(sec, PSTR(" %2s"), (isitAM ? "AM" : "PM"));
-  // } else {
-  //   sprintf_P(sec, PSTR(":%02d"), second(localTime));
-  // }
+  char sec[5];
+  int  AmPmHour = hour(localTime);
+  bool isitAM = true;
+  if (useAMPM) {
+    if (AmPmHour > 11) { AmPmHour -= 12; isitAM = false; }
+    if (AmPmHour == 0) { AmPmHour  = 12; }
+    sprintf_P(sec, PSTR(" %2s"), (isitAM ? "AM" : "PM"));
+  } else {
+    sprintf_P(sec, PSTR(":%02d"), second(localTime));
+  }
 
-  // if (!strlen(text)) { // fallback if empty segment name: display date and time
-  //   sprintf_P(text, PSTR("%s %d, %d %d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
-  // } else {
-  //   if      (!strncmp_P(text,PSTR("#DATE"),5)) sprintf_P(text, zero?PSTR("%02d.%02d.%04d"):PSTR("%d.%d.%d"),   day(localTime),   month(localTime),  year(localTime));
-  //   else if (!strncmp_P(text,PSTR("#DDMM"),5)) sprintf_P(text, zero?PSTR("%02d.%02d")     :PSTR("%d.%d"),      day(localTime),   month(localTime));
-  //   else if (!strncmp_P(text,PSTR("#MMDD"),5)) sprintf_P(text, zero?PSTR("%02d/%02d")     :PSTR("%d/%d"),      month(localTime), day(localTime));
-  //   else if (!strncmp_P(text,PSTR("#TIME"),5)) sprintf_P(text, zero?PSTR("%02d:%02d%s")   :PSTR("%2d:%02d%s"), AmPmHour,         minute(localTime), sec);
-  //   else if (!strncmp_P(text,PSTR("#HHMM"),5)) sprintf_P(text, zero?PSTR("%02d:%02d")     :PSTR("%d:%02d"),    AmPmHour,         minute(localTime));
-  //   else if (!strncmp_P(text,PSTR("#HH"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),         AmPmHour);
-  //   else if (!strncmp_P(text,PSTR("#MM"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),        minute(localTime));
-  // }
-
-  // const int numberOfLetters = strlen(text);
-
-  // const unsigned long now = millis(); // reduce millis() calls
-  
+  if (!strlen(text)) { // fallback if empty segment name: display date and time
+    sprintf_P(text, PSTR("%s %d, %d %d:%02d%s"), monthShortStr(month(localTime)), day(localTime), year(localTime), AmPmHour, minute(localTime), sec);
+  } else {
+    if      (!strncmp_P(text,PSTR("#DATE"),5)) sprintf_P(text, zero?PSTR("%02d.%02d.%04d"):PSTR("%d.%d.%d"),   day(localTime),   month(localTime),  year(localTime));
+    else if (!strncmp_P(text,PSTR("#DDMM"),5)) sprintf_P(text, zero?PSTR("%02d.%02d")     :PSTR("%d.%d"),      day(localTime),   month(localTime));
+    else if (!strncmp_P(text,PSTR("#MMDD"),5)) sprintf_P(text, zero?PSTR("%02d/%02d")     :PSTR("%d/%d"),      month(localTime), day(localTime));
+    else if (!strncmp_P(text,PSTR("#TIME"),5)) sprintf_P(text, zero?PSTR("%02d:%02d%s")   :PSTR("%2d:%02d%s"), AmPmHour,         minute(localTime), sec);
+    else if (!strncmp_P(text,PSTR("#HHMM"),5)) sprintf_P(text, zero?PSTR("%02d:%02d")     :PSTR("%d:%02d"),    AmPmHour,         minute(localTime));
+    else if (!strncmp_P(text,PSTR("#HH"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),         AmPmHour);
+    else if (!strncmp_P(text,PSTR("#MM"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),        minute(localTime));
+  }
 
   u8g2_t u8g2;
 
   u8g2.utf8_state = 0;
   u8g2.encoding = 0;
-  u8g2.width = 10;
-  u8g2.height = 10;
+  u8g2.width = cols;
+  u8g2.height = rows;
   u8g2.font_decode.dir = 0;
+
   u8g2.cb = draw_l90_cb;
 
   u8g2_SetFont(&u8g2, u8g2_font_u8glib_4_tf);
 
-  u8g2_DrawUTF8(&u8g2, 0, 9, text);
+  int yoffset = map(SEGMENT.intensity, 0, 255, 0, rows);
 
-  // int width = (numberOfLetters * rotLW);
-
-  // int yoffset = map(SEGMENT.intensity, 0, 255, -rows/2, rows/2) + (rows-rotLH)/2;\
+  uint16_t width = u8g2_DrawUTF8(&u8g2, cols - SEGENV.aux0, yoffset, text);
+  const unsigned long now = millis(); // reduce millis() calls
 
   // if (width <= cols) {
   //   // scroll vertically (e.g. ^^ Way out ^^) if it fits
-  //   int speed = map(SEGMENT.speed, 0, 255, 5000, 1000);
-  //   int frac = now % speed + 1;
-  //   if (SEGMENT.intensity == 255) {
-  //     yoffset = (2 * frac * rows)/speed - rows;
-  //   } else if (SEGMENT.intensity == 0) {
-  //     yoffset = rows - (2 * frac * rows)/speed;
-  //   }
+  //   // int speed = map(SEGMENT.speed, 0, 255, 5000, 1000);
+  //   // int frac = now % speed + 1;
+  //   // if (SEGMENT.intensity == 255) {
+  //   //   yoffset = (2 * frac * rows)/speed - rows;
+  //   // } else if (SEGMENT.intensity == 0) {
+  //   //   yoffset = rows - (2 * frac * rows)/speed;
+  //   // }
   // }
 
-  // if (SEGENV.step < now) {
-  //   // calculate start offset
-  //   if (width > cols) {
-  //     if (SEGMENT.check3) {
-  //       if (SEGENV.aux0 == 0) SEGENV.aux0  = width + cols - 1;
-  //       else                --SEGENV.aux0;
-  //     } else                ++SEGENV.aux0 %= width + cols;
-  //   } else                    SEGENV.aux0  = (cols + width)/2;
-  //   ++SEGENV.aux1 &= 0xFF; // color shift
-  //   SEGENV.step = now + map(SEGMENT.speed, 0, 255, 250, 50); // shift letters every ~250ms to ~50ms
-  // }
+  if (SEGENV.step < now) {
+    // calculate start offset
+    if (width > cols) {
+      if (SEGMENT.check3) {
+        if (SEGENV.aux0 == 0) {
+          SEGENV.aux0 = width + cols - 1;
+        } else {
+          --SEGENV.aux0;
+        }
+      } else {
+        ++SEGENV.aux0 %= width + cols;
+      }
+    } else {
+      SEGENV.aux0  = (cols + width)/2;
+    }
 
-  // if (!SEGMENT.check2) SEGMENT.fade_out(255 - (SEGMENT.custom1>>4));  // trail
-
-  // for (int i = 0; i < numberOfLetters; i++) {
-  //   int xoffset = int(cols) - int(SEGENV.aux0) + rotLW*i;
-  //   if (xoffset + rotLW < 0) continue; // don't draw characters off-screen
-  //   uint32_t col1 = SEGMENT.color_from_palette(SEGENV.aux1, false, PALETTE_SOLID_WRAP, 0);
-  //   uint32_t col2 = BLACK;
-  //   if (SEGMENT.check1 && SEGMENT.palette == 0) {
-  //     col1 = SEGCOLOR(0);
-  //     col2 = SEGCOLOR(2);
-  //   }
-  //   SEGMENT.drawCharacter(text[i], xoffset, yoffset, letterWidth, letterHeight, col1, col2, map(SEGMENT.custom3, 0, 31, -2, 2));
-  // }
+    ++SEGENV.aux1 &= 0xFF; // color shift
+    SEGENV.step = now + map(SEGMENT.speed, 0, 255, 250, 50); // shift letters every ~250ms to ~50ms
+  }
 
   return FRAMETIME;
 }

@@ -104,15 +104,9 @@ extern const uint8_t u8g2_font_u8glib_4_tf[] U8G2_FONT_SECTION("u8g2_font_u8glib
 
 //u8g2_font.cpp
 
-#ifdef U8G2_16BIT
 typedef uint16_t u8g2_uint_t; /* for pixel position only */
 typedef int16_t u8g2_int_t; /* introduced for circle calculation */
 typedef int32_t u8g2_long_t; /* introduced for ellipse calculation */
-#else
-typedef uint8_t u8g2_uint_t; /* for pixel position only */
-typedef int8_t u8g2_int_t; /* introduced for circle calculation */
-typedef int16_t u8g2_long_t; /* introduced for ellipse calculation */
-#endif
 
 typedef struct u8g2_struct u8g2_t;
 
