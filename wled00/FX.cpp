@@ -5909,17 +5909,6 @@ uint16_t mode_2Dfloatingblobs(void) {
 #undef MAX_BLOBS
 static const char _data_FX_MODE_2DBLOBS[] PROGMEM = "Blobs@!,# blobs,Blur,Trail;!;!;2;c1=8";
 
-void draw_l90_cb(u8g2_uint_t x, u8g2_uint_t y, u8g2_uint_t len, uint8_t dir) {
-  if (dir == 0) {
-    for (u8g2_uint_t i = 0; i < len; i++) {
-      SEGMENT.setPixelColorXY(x+i, y, SEGMENT.color_from_palette(0, false, false, 0));
-    }
-  } else {
-    for (u8g2_uint_t i = 0; i < len; i++) {
-      SEGMENT.setPixelColorXY(x, y + i, SEGMENT.color_from_palette(0, false, false, 0));
-    }
-  }
-}
 
 ////////////////////////////
 //     2D Scrolling text  //
@@ -5967,22 +5956,6 @@ uint16_t mode_2Dscrollingtext(void) {
     else if (!strncmp_P(text,PSTR("#HH"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),         AmPmHour);
     else if (!strncmp_P(text,PSTR("#MM"),3))   sprintf_P(text, zero?PSTR("%02d")          :PSTR("%d"),        minute(localTime));
   }
-
-  u8g2_t u8g2;
-
-  u8g2.utf8_state = 0;
-  u8g2.encoding = 0;
-  u8g2.width = cols;
-  u8g2.height = rows;
-  u8g2.font_decode.dir = 0;
-
-  u8g2.cb = draw_l90_cb;
-
-  u8g2_SetFont(&u8g2, u8g2_font_u8glib_4_tf);
-
-  int yoffset = map(SEGMENT.intensity, 0, 255, 0, rows);
-
-  uint16_t width = u8g2_DrawUTF8(&u8g2, cols - SEGENV.aux0, yoffset, text);
   const unsigned long now = millis(); // reduce millis() calls
 
   // if (width <= cols) {
@@ -5995,6 +5968,11 @@ uint16_t mode_2Dscrollingtext(void) {
   //   //   yoffset = rows - (2 * frac * rows)/speed;
   //   // }
   // }
+
+  int yoffset = map(SEGMENT.intensity, 0, 255, 0, rows);
+
+
+  SEGMENT.drawText(cols - SEGENV.aux0, yoffset, text);
 
   if (SEGENV.step < now) {
     // calculate start offset

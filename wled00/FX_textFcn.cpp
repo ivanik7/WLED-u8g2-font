@@ -1,10 +1,5 @@
-#include "wled.h"
-#include "fcn_declare.h"
 
 /*
-
-  u8g2_font.c
-
   Universal 8bit Graphics Library (https://github.com/olikraus/u8g2/)
 
   Copyright (c) 2016, olikraus@gmail.com
@@ -33,26 +28,56 @@
   STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
   ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 */
+
+
+#include "FX.h"
+#include "FX_textFcn.h"
+
+uint16_t Segment::drawText(uint8_t x, uint8_t y, const char* text) {
+  u8g2_t u8g2;
+
+  u8g2.utf8_state = 0;
+  u8g2.encoding = 0;
+  u8g2.width = SEGMENT.virtualWidth();;
+  u8g2.height = SEGMENT.virtualHeight();
+  u8g2.font_decode.dir = 0;
+
+//   u8g2.cb = draw_l90_cb;
+
+  u8g2_SetFont(&u8g2, u8g2_font_u8glib_4_tf);
+
+  return u8g2_DrawUTF8(&u8g2, x, y, text);
+}
+
+
+void draw_l90_cb(u8g2_uint_t x, u8g2_uint_t y, u8g2_uint_t len, uint8_t dir) {
+  if (dir == 0) {
+    for (u8g2_uint_t i = 0; i < len; i++) {
+      SEGMENT.setPixelColorXY(x+i, y, SEGMENT.color_from_palette(0, false, false, 0));
+    }
+  } else {
+    for (u8g2_uint_t i = 0; i < len; i++) {
+      SEGMENT.setPixelColorXY(x, y + i, SEGMENT.color_from_palette(0, false, false, 0));
+    }
+  }
+}
 
 /* size of the font data structure, there is no struct or class... */
 /* this is the size for the new font format */
 
 #define U8G2_FONT_DATA_STRUCT_SIZE 23
 
-
-
 #ifndef u8x8_pgm_read
-#ifndef CHAR_BIT
-#define u8x8_pgm_read(adr) (*(const uint8_t*)(adr))
-#else
-#if CHAR_BIT > 8
-#define u8x8_pgm_read(adr) ((*(const uint8_t*)(adr)) & 0x0ff)
-#else
-#define u8x8_pgm_read(adr) (*(const uint8_t*)(adr))
-#endif
-#endif
+    #ifndef CHAR_BIT
+        #define u8x8_pgm_read(adr) (*(const uint8_t*)(adr))
+    #else
+        #if CHAR_BIT > 8
+            #define u8x8_pgm_read(adr) ((*(const uint8_t*)(adr)) & 0x0ff)
+        #else
+            #define u8x8_pgm_read(adr) (*(const uint8_t*)(adr))
+        #endif
+    #endif
 #endif
 
 #define U8G2_FONT_HEIGHT_MODE_TEXT 0
@@ -110,23 +135,7 @@
 
 */
 
-/* use case: What is the width and the height of the minimal box into which string s fints? */
-void u8g2_font_GetStrSize(const void* font, const char* s, u8g2_uint_t* width, u8g2_uint_t* height);
-void u8g2_font_GetStrSizeP(const void* font, const char* s, u8g2_uint_t* width, u8g2_uint_t* height);
-
-/* use case: lower left edge of a minimal box is known, what is the correct x, y position for the string draw procedure */
-void u8g2_font_AdjustXYToDraw(const void* font, const char* s, u8g2_uint_t* x, u8g2_uint_t* y);
-void u8g2_font_AdjustXYToDrawP(const void* font, const char* s, u8g2_uint_t* x, u8g2_uint_t* y);
-
-/* use case: Baseline origin known, return minimal box */
-void u8g2_font_GetStrMinBox(u8g2_t* u8g2, const void* font, const char* s, u8g2_uint_t* x, u8g2_uint_t* y, u8g2_uint_t* width, u8g2_uint_t* height);
-
-/* procedures */
-
-/*========================================================================*/
 /* low level byte and word access */
-
-/* removed NOINLINE, because it leads to smaller code, might also be faster */
 static uint8_t u8g2_font_get_byte(const uint8_t* font, uint8_t offset)
 {
     font += offset;
@@ -255,7 +264,6 @@ uint8_t u8g2_font_decode_get_unsigned_bits(u8g2_font_decode_t* f, uint8_t cnt)
     uint8_t bit_pos = f->decode_bit_pos;
     uint8_t bit_pos_plus_cnt;
 
-    // val = *(f->decode_ptr);
     val = u8x8_pgm_read(f->decode_ptr);
 
     val >>= bit_pos;
@@ -265,13 +273,10 @@ uint8_t u8g2_font_decode_get_unsigned_bits(u8g2_font_decode_t* f, uint8_t cnt)
         uint8_t s = 8;
         s -= bit_pos;
         f->decode_ptr++;
-        // val |= *(f->decode_ptr) << (8-bit_pos);
         val |= u8x8_pgm_read(f->decode_ptr) << (s);
-        // bit_pos -= 8;
         bit_pos_plus_cnt -= 8;
     }
     val &= (1U << cnt) - 1;
-    // bit_pos += cnt;
 
     f->decode_bit_pos = bit_pos_plus_cnt;
     return val;
@@ -301,7 +306,6 @@ int8_t u8g2_font_decode_get_signed_bits(u8g2_font_decode_t* f, uint8_t cnt)
     d <<= cnt;
     v -= d;
     return v;
-    // return (int8_t)u8g2_font_decode_get_unsigned_bits(f, cnt) - ((1<<cnt)>>1);
 }
 
 u8g2_uint_t u8g2_add_vector_y(u8g2_uint_t dy, int8_t x, int8_t y, uint8_t dir)
@@ -386,8 +390,8 @@ void u8g2_DrawHVLine(u8g2_t* u8g2, u8g2_uint_t x, u8g2_uint_t y, u8g2_uint_t len
         //     return;
         // }
 
-        u8g2->cb(x, y, len, dir);
-
+        // u8g2->cb(x, y, len, dir);
+        draw_l90_cb(x, y, len, dir);
         
         // TODO: DRAW HERE
     }
@@ -921,59 +925,6 @@ void u8g2_UpdateRefHeight(u8g2_t* u8g2)
     }
 }
 
-// void u8g2_SetFontRefHeightText(u8g2_t* u8g2)
-// {
-//     u8g2->font_height_mode = U8G2_FONT_HEIGHT_MODE_TEXT;
-//     u8g2_UpdateRefHeight(u8g2);
-// }
-
-// void u8g2_SetFontRefHeightExtendedText(u8g2_t* u8g2)
-// {
-//     u8g2->font_height_mode = U8G2_FONT_HEIGHT_MODE_XTEXT;
-//     u8g2_UpdateRefHeight(u8g2);
-// }
-
-// void u8g2_SetFontRefHeightAll(u8g2_t* u8g2)
-// {
-//     u8g2->font_height_mode = U8G2_FONT_HEIGHT_MODE_ALL;
-//     u8g2_UpdateRefHeight(u8g2);
-// }
-
-/*===============================================*/
-/* callback procedures to correct the y position */
-
-// u8g2_uint_t u8g2_font_calc_vref_top(u8g2_t* u8g2)
-// {
-//     u8g2_uint_t tmp;
-//     /* reference pos is one pixel above the upper edge of the reference glyph */
-//     tmp = (u8g2_uint_t)(u8g2->font_ref_ascent);
-//     tmp++;
-//     return tmp;
-// }
-
-// void u8g2_SetFontPosTop(u8g2_t* u8g2)
-// {
-//     u8g2->font_calc_vref = u8g2_font_calc_vref_top;
-// }
-
-// u8g2_uint_t u8g2_font_calc_vref_center(u8g2_t* u8g2)
-// {
-//     int8_t tmp;
-//     tmp = u8g2->font_ref_ascent;
-//     tmp -= u8g2->font_ref_descent;
-//     tmp /= 2;
-//     tmp += u8g2->font_ref_descent;
-//     return tmp;
-// }
-
-// void u8g2_SetFontPosCenter(u8g2_t* u8g2)
-// {
-//     u8g2->font_calc_vref = u8g2_font_calc_vref_center;
-// }
-
-/*===============================================*/
-
-
 #if defined(ESP8266)
 uint8_t u8x8_pgm_read_esp(const uint8_t * addr) 
 {
@@ -1139,4 +1090,3 @@ void u8g2_SetFontDirection(u8g2_t* u8g2, uint8_t dir)
 {
     u8g2->font_decode.dir = dir;
 }
-

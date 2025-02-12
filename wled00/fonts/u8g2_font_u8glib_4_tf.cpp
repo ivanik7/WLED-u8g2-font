@@ -2,8 +2,8 @@
   u8g2_fonts.c
 */
 
-#include "wled.h"
-#include "u8g2_fonts.h"
+// #include "wled.h"
+#include "fonts.h"
 
 #define U8G2_FONT_SECTION(name) U8X8_FONT_SECTION(name) 
 
